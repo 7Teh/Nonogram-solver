@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Nonogram Solver</title>
+    <style>
+        :root {
+            --cell-size: 40px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f0f0;
+            color: #333;
+            min-height: 100vh;
+            padding: 10px;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 1.5em;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 0.8em;
+            color: #7f8c8d;
+            margin-bottom: 16px;
+        }
+        
+        .size-selector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .size-selector label {
+            font-weight: bold;
+        }
+        
+        .size-selector select {
+            padding: 8px 12px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .input-section {
+            margin-bottom: 12px;
+        }
+        
+        .input-section h3 {
+            font-size: 0.9em;
+            background: #3498db;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .input-section h3::after {
+            content: '▼';
+            font-size: 0.8em;
+            transition: transform 0.3s;
+        }
+        
+        .input-section.collapsed h3::after {
+            transform: rotate(-90deg);
+        }
+        
+        .input-section.collapsed .input-list {
+            display: none;
+        }
+        
+        .input-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            padding: 4px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .input-row label {
+            font-size: 0.8em;
+            min-width: 60px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .input-row input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-row input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+        }
+        
+        .btn-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .btn-solve {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-solve:active {
+            background: #219a52;
+            transform: scale(0.98);
+        }
+        
+        .btn-clear {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-clear:active {
+            background: #c0392b;
+            transform: scale(0.98);
+        }
+        
+        .btn-example {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .btn-example:active {
+            background: #e67e22;
+            transform: scale(0.98);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .result-section {
+            margin-top: 16px;
+            display: none;
+        }
+        
+        .result-section.show {
+            display: block;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .result-time {
+            font-size: 0.85em;
+            color: #7f8c8d;
+        }
+        
+        .grid-container {
+            display: inline-block;
+            border: 2px solid #2c3e50;
+            background: #2c3e50;
+            line-height: 0;
+            overflow-x: auto;
+            max-width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .grid-row {
+            display: flex;
+        }
+        
+        .grid-cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border: 1px solid #555;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+        
+        .grid-cell.black {
+            background: #2c3e50;
+        }
+        
+        .grid-cell.white {
+            background: #ecf0f1;
+        }
+        
+        .grid-cell.dot {
+            background: #ecf0f1;
+            position: relative;
+        }
+        
+        .grid-cell.dot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 25%;
+            height: 25%;
+            background: #95a5a6;
+            border-radius: 50%;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-msg {
+            background: #ffeaa7;
+            color: #d63031;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .error-msg.show {
+            display: block;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 1000;
+            animation: fadeInOut 2s;
+            pointer-events: none;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; bottom: 0; }
+            20% { opacity: 1; bottom: 20px; }
+            80% { opacity: 1; bottom: 20px; }
+            100% { opacity: 0; bottom: 0; }
+        }
+        
+        @media (max-width: 400px) {
+            :root {
+                --cell-size: 25px;
+            }
+            .input-row input {
+                font-size: 12px;
+                padding: 6px;
+            }
+            .btn {
+                font-size: 14px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 Nonogram Solver</h1>
+        <p class="subtitle">Masukkan clue baris & kolom, dapatkan solusi</p>
+        
+        <div class="size-selector">
+            <label for="gridSize">Ukuran:</label>
+            <select id="gridSize">
+                <option value="5">5×5</option>
+                <option value="6">6×6</option>
+                <option value="7">7×7</option>
+                <option value="8">8×8</option>
+                <option value="9">9×9</option>
+                <option value="10" selected>10×10</option>
+                <option value="11">11×11</option>
+                <option value="12">12×12</option>
+                <option value="13">13×13</option>
+                <option value="14">14×14</option>
+                <option value="15">15×15</option>
+            </select>
+        </div>
+        
+        <div class="input-section" id="rowSection">
+            <h3 onclick="toggleSection('rowSection')">📋 CLUE BARIS</h3>
+            <div class="input-list" id="rowInputs"></div>
+        </div>
+        
+        <div class="input-section" id="colSection">
+            <h3 onclick="toggleSection('colSection')">📋 CLUE KOLOM</h3>
+            <div class="input-list" id="colInputs"></div>
+        </div>
+        
+        <div class="btn-container">
+            <button class="btn btn-solve" onclick="solvePuzzle()">🔍 Pecahkan</button>
+            <button class="btn btn-clear" onclick="clearAll()">🗑️ Hapus</button>
+            <button class="btn btn-example" onclick="loadExample()">📝 Contoh</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Memproses...
+        </div>
+        
+        <div class="error-msg" id="errorMsg"></div>
+        
+        <div class="result-section" id="resultSection">
+            <div class="result-header">
+                <strong>✅ Solusi Ditemukan</strong>
+                <span class="result-time" id="resultTime"></span>
+            </div>
+            <div class="grid-container" id="gridDisplay"></div>
+        </div>
+    </div>
+    
+    <script>
+        let currentSize = 10;
+        
+        // Inisialisasi
+        document.getElementById('gridSize').addEventListener('change', function(e) {
+            currentSize = parseInt(e.target.value);
+            buildInputs();
+            hideResult();
+        });
+        
+        buildInputs();
+        
+        function buildInputs() {
+            const rowContainer = document.getElementById('rowInputs');
+            const colContainer = document.getElementById('colInputs');
+            
+            rowContainer.innerHTML = '';
+            colContainer.innerHTML = '';
+            
+            for (let i = 0; i < currentSize; i++) {
+                // Baris
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'input-row';
+                rowDiv.innerHTML = `
+                    <label>Baris ${i + 1}</label>
+                    <input type="text" id="row${i}" placeholder="0 atau 1,2,3..." inputmode="numeric" pattern="[0-9,]*">
+                `;
+                rowContainer.appendChild(rowDiv);
+                
+                // Kolom
+                const colDiv = document.createElement('div');
+                colDiv.className = 'input-row';
+                colDiv.innerHTML = `
+                    <label>Kolom ${i + 1}</label>
+                    <input type="text" id="col${i}" placeholder="0 atau 1,2,3..." inputmode="numeric" pattern="[0-9,]*">
+                `;
+                colContainer.appendChild(colDiv);
+            }
+        }
+        
+        function toggleSection(sectionId) {
+            document.getElementById(sectionId).classList.toggle('collapsed');
+        }
+        
+        function getClues(prefix) {
+            const clues = [];
+            for (let i = 0; i < currentSize; i++) {
+                const input = document.getElementById(`${prefix}${i}`);
+                const text = input.value.trim();
+                
+                if (!text || text === '0') {
+                    clues.push([0]);
+                } else {
+                    const parts = text.split(',').map(s => parseInt(s.trim()));
+                    if (parts.some(isNaN)) {
+                        return null;
+                    }
+                    clues.push(parts);
+                }
+            }
+            return clues;
+        }
+        
+        function showError(msg) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = msg;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 3000);
+        }
+        
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+        
+        function hideResult() {
+            document.getElementById('resultSection').classList.remove('show');
+        }
+        
+        function clearAll() {
+            for (let i = 0; i < currentSize; i++) {
+                document.getElementById(`row${i}`).value = '';
+                document.getElementById(`col${i}`).value = '';
+            }
+            hideResult();
+            showToast('Input dibersihkan');
+        }
+        
+        function loadExample() {
+            document.getElementById('gridSize').value = '5';
+            currentSize = 5;
+            buildInputs();
+            
+            const rowClues = ['1,1', '3', '1', '3', '1,1'];
+            const colClues = ['1,1', '1,1', '0', '1,1', '1,1'];
+            
+            for (let i = 0; i < 5; i++) {
+                document.getElementById(`row${i}`).value = rowClues[i];
+                document.getElementById(`col${i}`).value = colClues[i];
+            }
+            
+            hideResult();
+            showToast('Contoh puzzle 5×5 dimuat');
+        }
+        
+        function solvePuzzle() {
+            const rowClues = getClues('row');
+            const colClues = getClues('col');
+            
+            if (!rowClues || !colClues) {
+                showError('Format clue tidak valid! Gunakan angka yang dipisahkan koma, contoh: 1,3,2');
+                return;
+            }
+            
+            hideResult();
+            document.getElementById('loading').classList.add('show');
+            document.querySelector('.btn-solve').disabled = true;
+            
+            // Gunakan setTimeout untuk memberi waktu UI update
+            setTimeout(() => {
+                try {
+                    const startTime = performance.now();
+                    const solver = new NonogramSolver();
+                    const result = solver.solve(rowClues, colClues, currentSize);
+                    const duration = (performance.now() - startTime).toFixed(1);
+                    
+                    document.getElementById('loading').classList.remove('show');
+                    document.querySelector('.btn-solve').disabled = false;
+                    
+                    if (result) {
+                        displayResult(result, duration);
+                    } else {
+                        showError('Tidak ada solusi yang mungkin untuk clue ini.');
+                    }
+                } catch (e) {
+                    document.getElementById('loading').classList.remove('show');
+                    document.querySelector('.btn-solve').disabled = false;
+                    showError('Terjadi kesalahan: ' + e.message);
+                }
+            }, 100);
+        }
+        
+        function displayResult(grid, duration) {
+            const gridDisplay = document.getElementById('gridDisplay');
+            gridDisplay.innerHTML = '';
+            
+            // Sesuaikan ukuran sel
+            const maxWidth = Math.min(window.innerWidth - 40, 600);
+            const cellSize = Math.max(20, Math.floor((maxWidth - currentSize * 2) / currentSize));
+            document.documentElement.style.setProperty('--cell-size', cellSize + 'px');
+            
+            for (let i = 0; i < currentSize; i++) {
+                const row = document.createElement('div');
+                row.className = 'grid-row';
+                
+                for (let j = 0; j < currentSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    
+                    if (grid[i][j] === 1) {
+                        cell.classList.add('black');
+                    } else {
+                        cell.classList.add('white');
+                    }
+                    
+                    row.appendChild(cell);
+                }
+                
+                gridDisplay.appendChild(row);
+            }
+            
+            document.getElementById('resultTime').textContent = `⏱️ ${duration} ms`;
+            document.getElementById('resultSection').classList.add('show');
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+            
+            showToast(`Solusi ditemukan dalam ${duration} ms`);
+        }
+        
+        // ==================== SOLVER ALGORITHM ====================
+        class NonogramSolver {
+            solve(rowClues, colClues, size) {
+                // Inisialisasi grid: 0 = unknown, 1 = hitam, -1 = putih
+                const grid = Array.from({ length: size }, () => Array(size).fill(0));
+                
+                // Line solving iteratif
+                let changed = true;
+                let iterations = 0;
+                const maxIterations = size * 10;
+                
+                while (changed && iterations < maxIterations) {
+                    changed = false;
+                    iterations++;
+                    
+                    // Proses baris
+                    for (let i = 0; i < size; i++) {
+                        if (this.applyLineLogic(grid[i], rowClues[i])) {
+                            changed = true;
+                        }
+                    }
+                    
+                    // Proses kolom
+                    for (let j = 0; j < size; j++) {
+                        const column = [];
+                        for (let i = 0; i < size; i++) {
+                            column.push(grid[i][j]);
+                        }
+                        
+                        if (this.applyLineLogic(column, colClues[j])) {
+                            for (let i = 0; i < size; i++) {
+                                grid[i][j] = column[i];
+                            }
+                            changed = true;
+                        }
+                    }
+                }
+                
+                // Backtracking untuk sel yang belum terisi
+                if (this.backtrack(grid, rowClues, colClues, 0, 0, size)) {
+                    return grid;
+                }
+                
+                return null;
+            }
+            
+            applyLineLogic(line, clues) {
+                let changed = false;
+                const length = line.length;
+                
+                // Jika clue [0], semua putih
+                if (clues.length === 1 && clues[0] === 0) {
+                    for (let i = 0; i < length; i++) {
+                        if (line[i] === 0) {
+                            line[i] = -1;
+                            changed = true;
+                        }
+                    }
+                    return changed;
+                }
+                
+                // Hitung total minimal
+                let minLength = clues.reduce((a, b) => a + b, 0) + clues.length - 1;
+                
+                // Jika total persis = panjang, hanya satu kemungkinan
+                if (minLength === length) {
+                    let pos = 0;
+                    for (let c = 0; c < clues.length; c++) {
+                        for (let k = 0; k < clues[c]; k++) {
+                            if (line[pos] === 0) {
+                                line[pos] = 1;
+                                changed = true;
+                            }
+                            pos++;
+                        }
+                        if (c < clues.length - 1) {
+                            if (line[pos] === 0) {
+                                line[pos] = -1;
+                                changed = true;
+                            }
+                            pos++;
+                        }
+                    }
+                    return changed;
+                }
+                
+                // Overlap detection
+                const leftMost = this.getLeftMost(clues, length);
+                const rightMost = this.getRightMost(clues, length);
+                
+                for (let c = 0; c < clues.length; c++) {
+                    const overlapStart = rightMost[c];
+                    const overlapEnd = leftMost[c] + clues[c];
+                    
+                    for (let i = overlapStart; i < overlapEnd && i < length; i++) {
+                        if (i >= leftMost[c] && line[i] === 0) {
+                            line[i] = 1;
+                            changed = true;
+                        }
+                    }
+                }
+                
+                // Isi celah yang pasti putih
+                const filled = line.map((v, i) => v === 1 ? i : -1).filter(v => v >= 0);
+                
+                if (filled.length > 0) {
+                    const minPos = filled[0];
+                    const maxPos = filled[filled.length - 1];
+                    
+                    // Cek kemungkinan penempatan
+                    for (let i = 0; i < length; i++) {
+                        if (line[i] === 0) {
+                            // Coba hitam
+                            line[i] = 1;
+                            if (!this.canFitBlocks(line, clues)) {
+                                line[i] = -1;
+                                changed = true;
+                            } else {
+                                line[i] = 0;
+                            }
+                        }
+                    }
+                }
+                
+                return changed;
+            }
+            
+            canFitBlocks(line, clues) {
+                const blocks = [];
+                let count = 0;
+                
+                for (const cell of line) {
+                    if (cell === 1) {
+                        count++;
+                    } else if (count > 0) {
+                        blocks.push(count);
+                        count = 0;
+                    }
+                }
+                if (count > 0) blocks.push(count);
+                
+                if (blocks.length > clues.length) return false;
+                
+                // Cek apakah prefix blocks sesuai
+                for (let i = 0; i < blocks.length; i++) {
+                    if (blocks[i] > clues[i]) return false;
+                    if (i === blocks.length - 1 && line[line.length - 1] !== 1 && blocks[i] !== clues[i]) {
+                        // Block terakhir harus cocok jika tidak di ujung
+                    }
+                }
+                
+                return true;
+            }
+            
+            getLeftMost(clues, length) {
+                const positions = [];
+                let pos = 0;
+                for (const clue of clues) {
+                    positions.push(pos);
+                    pos += clue + 1;
+                }
+                return positions;
+            }
+            
+            getRightMost(clues, length) {
+                const positions = [];
+                let pos = length;
+                for (let i = clues.length - 1; i >= 0; i--) {
+                    pos -= clues[i];
+                    positions.unshift(pos);
+                    pos -= 1;
+                }
+                return positions;
+            }
+            
+            backtrack(grid, rowClues, colClues, row, col, size) {
+                if (row === size) {
+                    return this.isValid(grid, rowClues, colClues, size);
+                }
+                
+                const nextRow = col === size - 1 ? row + 1 : row;
+                const nextCol = col === size - 1 ? 0 : col + 1;
+                
+                if (grid[row][col] !== 0) {
+                    return this.backtrack(grid, rowClues, colClues, nextRow, nextCol, size);
+                }
+                
+                // Coba putih dulu
+                grid[row][col] = -1;
+                if (this.isPartialValid(grid, rowClues, colClues, row, col, size) &&
+                    this.backtrack(grid, rowClues, colClues, nextRow, nextCol, size)) {
+                    return true;
+                }
+                
+                // Coba hitam
+                grid[row][col] = 1;
+                if (this.isPartialValid(grid, rowClues, colClues, row, col, size) &&
+                    this.backtrack(grid, rowClues, colClues, nextRow, nextCol, size)) {
+                    return true;
+                }
+                
+                grid[row][col] = 0;
+                return false;
+            }
+            
+            isPartialValid(grid, rowClues, colClues, currentRow, currentCol, size) {
+                // Cek baris
+                if (!this.isLinePartialValid(grid[currentRow], rowClues[currentRow])) {
+                    return false;
+                }
+                
+                // Cek kolom
+                const column = [];
+                for (let i = 0; i < size; i++) {
+                    column.push(grid[i][currentCol]);
+                }
+                
+                return this.isLinePartialValid(column, colClues[currentCol]);
+            }
+            
+            isLinePartialValid(line, clues) {
+                const blocks = [];
+                let count = 0;
+                
+                for (let i = 0; i < line.length; i++) {
+                    if (line[i] === 1) {
+                        count++;
+                    } else if (line[i] === -1) {
+                        if (count > 0) {
+                            blocks.push(count);
+                            count = 0;
+                        }
+                    } else {
+                        break; // Unknown, stop checking
+                    }
+                }
+                
+                if (count > 0) {
+                    // Di akhir garis
+                    if (line[line.length - 1] !== 0) {
+                        blocks.push(count);
+                    }
+                }
+                
+                // Prefix blocks harus valid
+                for (let i = 0; i < blocks.length; i++) {
+                    if (i >= clues.length || blocks[i] > clues[i]) return false;
+                    if (i === blocks.length - 1 && blocks[i] < clues[i] && 
+                        (i === line.length - 1 || line[line.indexOf(-1)] === undefined)) {
+                        // Block terakhir yang tidak lengkap hanya valid jika masih ada ruang
+                    }
+                }
+                
+                // Tidak boleh terlalu banyak block
+                if (blocks.length > clues.length) return false;
+                
+                // Cek kapasitas tersisa
+                let remainingCells = 0;
+                for (let i = 0; i < line.length; i++) {
+                    if (line[i] === 0 || line[i] === 1) remainingCells++;
+                }
+                
+                let remainingClues = 0;
+                for (let i = blocks.length; i < clues.length; i++) {
+                    remainingClues += clues[i] + (i > blocks.length ? 1 : 0);
+                }
+                if (blocks.length > 0 && blocks.length < clues.length) {
+                    remainingClues++; // Separator
+                }
+                
+                if (remainingCells < remainingClues) return false;
+                
+                return true;
+            }
+            
+            isValid(grid, rowClues, colClues, size) {
+                // Cek semua baris
+                for (let i = 0; i < size; i++) {
+                    const blocks = this.getBlocks(grid[i]);
+                    if (!this.arraysEqual(blocks, rowClues[i])) return false;
+                }
+                
+                // Cek semua kolom
+                for (let j = 0; j < size; j++) {
+                    const column = [];
+                    for (let i = 0; i < size; i++) {
+                        column.push(grid[i][j]);
+                    }
+                    const blocks = this.getBlocks(column);
+                    if (!this.arraysEqual(blocks, colClues[j])) return false;
+                }
+                
+                return true;
+            }
+            
+            getBlocks(line) {
+                const blocks = [];
+                let count = 0;
+                
+                for (const cell of line) {
+                    if (cell === 1) {
+                        count++;
+                    } else if (count > 0) {
+                        blocks.push(count);
+                        count = 0;
+                    }
+                }
+                
+                if (count > 0) blocks.push(count);
+                if (blocks.length === 0) blocks.push(0);
+                
+                return blocks;
+            }
+            
+            arraysEqual(a, b) {
+                if (a.length !== b.length) return false;
+                for (let i = 0; i < a.length; i++) {
+                    if (a[i] !== b[i]) return false;
+                }
+                return true;
+            }
+        }
+        
+        // Support PWA - Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Bisa ditambahkan service worker untuk offline
+            });
+        }
+    </script>
+</body>
+</html>
