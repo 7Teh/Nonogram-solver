@@ -1,0 +1,18 @@
+{
+  "name": "Nonogram Solver",
+  "short_name": "Nonogram",
+  "description": "Pemecah puzzle Nonogram 5x5 hingga 15x15",
+  "start_url": "/nonogram-solver/",
+  "display": "standalone",
+  "background_color": "#f0f0f0",
+  "theme_color": "#3498db",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%233498db' rx='20'/><text x='50' y='70' text-anchor='middle' font-size='50'>🧩</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

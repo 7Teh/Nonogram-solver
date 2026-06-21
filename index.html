@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Nonogram Solver</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3498db">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Nonogram Solver">
     <style>
         :root {
             --cell-size: 40px;
@@ -340,6 +343,7 @@
     </style>
 </head>
 <body>
+
     <div class="container">
         <h1>🧩 Nonogram Solver</h1>
         <p class="subtitle">Masukkan clue baris & kolom, dapatkan solusi</p>
@@ -903,6 +907,20 @@
                 // Bisa ditambahkan service worker untuk offline
             });
         }
+    </script>
+    
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/nonogram-solver/service-worker.js')
+            .then(function(registration) {
+                console.log('Service Worker terdaftar dengan sukses:', registration.scope);
+            })
+            .catch(function(error) {
+                console.log('Service Worker gagal terdaftar:', error);
+            });
+        });
+    }
     </script>
 </body>
 </html>
