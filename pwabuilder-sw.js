@@ -1,8 +1,10 @@
 const CACHE_NAME = 'nonogram-solver-v1';
 const urlsToCache = [
-  '/nonogram-solver/',
-  '/nonogram-solver/index.html',
-  '/nonogram-solver/manifest.json'
+  '.',
+  'index.html',
+  'manifest.json',
+  'launchericon-512x512.png',
+  'launchericon-192x192.png'
 ];
 
 // Install Service Worker

@@ -2,9 +2,9 @@
   "name": "Nonogram Solver",
   "short_name": "Nonogram",
   "description": "Pemecah puzzle Nonogram 5x5 hingga 15x15",
-  "start_url": "https://7teh.github.io/Nonogram-solver/",
+  "start_url": ".",
   "display": "standalone",
-  "background_color": "#f0f0f0",
+  "background_color": "#ffffff",
   "theme_color": "#3498db",
   "orientation": "portrait",
   "icons": [
